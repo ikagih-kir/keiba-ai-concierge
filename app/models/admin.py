@@ -1,0 +1,18 @@
+# app/models/admin.py
+
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from datetime import datetime
+from sqlalchemy.sql import func
+from app.db.base import Base
+
+
+
+class Admin(Base):
+    __tablename__ = "admins"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), unique=True, index=True)
+    password_hash = Column(String(255), nullable=False)  # ★ここ
+    role = Column(String(50), default="admin")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

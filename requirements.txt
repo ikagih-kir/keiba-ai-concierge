@@ -1,0 +1,30 @@
+# ===== FastAPI 本体 =====
+fastapi==0.115.6
+uvicorn[standard]==0.30.6
+
+# ===== 設定管理 =====
+pydantic==2.9.2
+pydantic-settings==2.6.1
+
+# ===== DB / ORM =====
+SQLAlchemy==2.0.36
+alembic==1.13.3
+
+# ===== MySQL ドライバ =====
+PyMySQL==1.1.1
+
+# ===== Utility =====
+python-multipart==0.0.12
+
+cryptography>=42.0.0
+
+
+python-jose[cryptography]
+passlib[bcrypt]
+
+beautifulsoup4
+requests
+
+pandas
+lxml
+html5lib

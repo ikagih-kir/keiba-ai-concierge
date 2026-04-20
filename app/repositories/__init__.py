@@ -1,0 +1,5 @@
+from app.repositories import chat_thread_repository
+from app.repositories import chat_message_repository
+from app.repositories import chat_question_log_repository
+from app.repositories import chat_faq_repository
+from app.repositories import chat_question_log_repository
