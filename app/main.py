@@ -42,6 +42,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://admin.keiba-ai-concierge.link",
+        "https://api.keiba-ai-concierge.link",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
