@@ -1,5 +1,5 @@
 from datetime import date
-from typing import List, Optional
+from typing import List, Optional, Literal
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -36,12 +36,13 @@ def get_frame_trend_detail(
     return frame_trend_snapshot_service.get_public_frame_trend_snapshot(db, item_id)
 
 
+
 @router.get("/monthly-top-frames", response_model=FrameTrendMonthlyTopFrameResponse)
 def get_monthly_top_frames(
-    meeting_type: str = Query("central", description="central / local / all"),
-    months: int = Query(6, ge=1, le=24, description="何か月分返すか"),
-    end_year: Optional[int] = Query(None, description="終了年"),
-    end_month: Optional[int] = Query(None, ge=1, le=12, description="終了月"),
+    meeting_type: Literal["central", "local", "all"] = "central",
+    months: int = Query(6, ge=1, le=24),
+    end_year: Optional[int] = Query(None),
+    end_month: Optional[int] = Query(None, ge=1, le=12),
     db: Session = Depends(get_db),
 ):
     return frame_trend_input_service.get_monthly_top_frames(
