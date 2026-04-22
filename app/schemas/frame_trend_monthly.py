@@ -1,0 +1,19 @@
+from typing import Dict, List, Literal, Optional
+from pydantic import BaseModel, Field
+
+
+class FrameTrendMonthlyTopFrameItem(BaseModel):
+    year: int = Field(..., description="年")
+    month: int = Field(..., description="月")
+    top_frame: Optional[int] = Field(None, description="月内で1着数が最も多かった枠")
+    top_win_count: int = Field(0, description="その枠の1着数")
+    frame_win_counts: Dict[str, int] = Field(
+        default_factory=dict,
+        description="1〜8枠ごとの1着数",
+    )
+    sample_size: int = Field(0, description="集計レース数")
+
+
+class FrameTrendMonthlyTopFrameResponse(BaseModel):
+    meeting_type: Literal["central", "local", "all"]
+    items: List[FrameTrendMonthlyTopFrameItem]

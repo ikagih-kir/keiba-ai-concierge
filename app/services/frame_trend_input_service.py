@@ -7,7 +7,127 @@ from sqlalchemy.orm import Session
 import app.repositories.frame_trend_input_repository as frame_trend_input_repository
 import app.repositories.frame_trend_snapshot_repository as frame_trend_snapshot_repository
 from app.schemas.frame_trend_input import FrameTrendInputBatchCreate
+from collections import defaultdict
+from datetime import date
 
+from app.schemas.frame_trend_monthly import (
+    FrameTrendMonthlyTopFrameItem,
+    FrameTrendMonthlyTopFrameResponse,
+)
+import app.repositories.frame_trend_input_repository as frame_trend_input_repository
+
+
+LOCAL_VENUES = {
+    "大井",
+    "船橋",
+    "川崎",
+    "浦和",
+    "門別",
+    "名古屋",
+    "笠松",
+    "園田",
+    "姫路",
+    "高知",
+    "佐賀",
+    "金沢",
+    "盛岡",
+    "水沢",
+}
+
+
+def _detect_meeting_type_by_venue(venue: str) -> str:
+    return "local" if venue in LOCAL_VENUES else "central"
+
+
+def _month_range_from_end(year: int, month: int, months: int):
+    start_year = year
+    start_month = month - (months - 1)
+
+    while start_month <= 0:
+        start_month += 12
+        start_year -= 1
+
+    start_date = date(start_year, start_month, 1)
+
+    if month == 12:
+        next_month_date = date(year + 1, 1, 1)
+    else:
+        next_month_date = date(year, month + 1, 1)
+
+    end_date = next_month_date.fromordinal(next_month_date.toordinal() - 1)
+    return start_date, end_date
+
+
+def get_monthly_top_frames(
+    db,
+    *,
+    meeting_type: str = "central",
+    months: int = 6,
+    end_year: int | None = None,
+    end_month: int | None = None,
+):
+    today = date.today()
+    target_year = end_year or today.year
+    target_month = end_month or today.month
+
+    start_date, end_date = _month_range_from_end(
+        target_year,
+        target_month,
+        months,
+    )
+
+    rows = frame_trend_input_repository.list_frame_trend_inputs_by_date_range(
+        db,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    monthly_counts = defaultdict(lambda: {
+        "frame_counts": {i: 0 for i in range(1, 9)},
+        "sample_size": 0,
+    })
+
+    for row in rows:
+        row_meeting_type = _detect_meeting_type_by_venue(row.venue)
+
+        if meeting_type != "all" and row_meeting_type != meeting_type:
+            continue
+
+        ym = (row.target_date.year, row.target_date.month)
+        monthly_counts[ym]["frame_counts"][row.winning_frame] += 1
+        monthly_counts[ym]["sample_size"] += 1
+
+    items = []
+    sorted_keys = sorted(monthly_counts.keys())
+
+    for year, month in sorted_keys:
+        frame_counts = monthly_counts[(year, month)]["frame_counts"]
+        sample_size = monthly_counts[(year, month)]["sample_size"]
+
+        top_frame = None
+        top_win_count = 0
+
+        for frame in range(1, 9):
+            count = frame_counts[frame]
+            if count > top_win_count:
+                top_frame = frame
+                top_win_count = count
+
+        items.append(
+            FrameTrendMonthlyTopFrameItem(
+                year=year,
+                month=month,
+                top_frame=top_frame,
+                top_win_count=top_win_count,
+                frame_win_counts={str(k): v for k, v in frame_counts.items()},
+                sample_size=sample_size,
+            )
+        )
+
+    return FrameTrendMonthlyTopFrameResponse(
+        meeting_type=meeting_type,
+        items=items,
+    )
 
 def list_frame_trend_inputs(
     db: Session,

@@ -27,6 +27,26 @@ def list_frame_trend_inputs(
         .all()
     )
 
+def list_frame_trend_inputs_by_date_range(
+    db: Session,
+    *,
+    start_date: date,
+    end_date: date,
+):
+    return (
+        db.query(FrameTrendInput)
+        .filter(
+            FrameTrendInput.target_date >= start_date,
+            FrameTrendInput.target_date <= end_date,
+        )
+        .order_by(
+            FrameTrendInput.target_date.asc(),
+            FrameTrendInput.venue.asc(),
+            FrameTrendInput.race_number.asc(),
+        )
+        .all()
+    )
+
 
 def get_frame_trend_input_by_unique_key(
     db: Session,
