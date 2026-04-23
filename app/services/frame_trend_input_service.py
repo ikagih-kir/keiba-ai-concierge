@@ -11,8 +11,8 @@ from collections import defaultdict
 from datetime import date
 
 from app.schemas.frame_trend_monthly import (
-    FrameTrendMonthlyTopFrameItem,
-    FrameTrendMonthlyTopFrameResponse,
+    FrameTrendVenueMonthlyTopFrameItem,
+    FrameTrendVenueMonthlyTopFrameResponse,
 )
 import app.repositories.frame_trend_input_repository as frame_trend_input_repository
 
@@ -58,7 +58,7 @@ def _month_range_from_end(year: int, month: int, months: int):
     return start_date, end_date
 
 
-def get_monthly_top_frames(
+def get_monthly_top_frames_by_venue(
     db,
     *,
     meeting_type: str = "central",
@@ -82,7 +82,7 @@ def get_monthly_top_frames(
         end_date=end_date,
     )
 
-    monthly_counts = defaultdict(lambda: {
+    venue_monthly_counts = defaultdict(lambda: {
         "frame_counts": {i: 0 for i in range(1, 9)},
         "sample_size": 0,
     })
@@ -93,16 +93,19 @@ def get_monthly_top_frames(
         if meeting_type != "all" and row_meeting_type != meeting_type:
             continue
 
-        ym = (row.target_date.year, row.target_date.month)
-        monthly_counts[ym]["frame_counts"][row.winning_frame] += 1
-        monthly_counts[ym]["sample_size"] += 1
+        key = (row.venue, row.target_date.year, row.target_date.month)
+        venue_monthly_counts[key]["frame_counts"][row.winning_frame] += 1
+        venue_monthly_counts[key]["sample_size"] += 1
 
     items = []
-    sorted_keys = sorted(monthly_counts.keys())
+    sorted_keys = sorted(
+        venue_monthly_counts.keys(),
+        key=lambda x: (x[1], x[2], x[0]),
+    )
 
-    for year, month in sorted_keys:
-        frame_counts = monthly_counts[(year, month)]["frame_counts"]
-        sample_size = monthly_counts[(year, month)]["sample_size"]
+    for venue, year, month in sorted_keys:
+        frame_counts = venue_monthly_counts[(venue, year, month)]["frame_counts"]
+        sample_size = venue_monthly_counts[(venue, year, month)]["sample_size"]
 
         top_frame = None
         top_win_count = 0
@@ -114,17 +117,17 @@ def get_monthly_top_frames(
                 top_win_count = count
 
         items.append(
-            FrameTrendMonthlyTopFrameItem(
+            FrameTrendVenueMonthlyTopFrameItem(
+                venue=venue,
                 year=year,
                 month=month,
                 top_frame=top_frame,
                 top_win_count=top_win_count,
-                frame_win_counts={str(k): v for k, v in frame_counts.items()},
                 sample_size=sample_size,
             )
         )
 
-    return FrameTrendMonthlyTopFrameResponse(
+    return FrameTrendVenueMonthlyTopFrameResponse(
         meeting_type=meeting_type,
         items=items,
     )

@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.schemas.frame_trend_snapshot import FrameTrendSnapshotOut
 from app.services import frame_trend_snapshot_service
 from app.schemas.frame_trend_monthly import FrameTrendMonthlyTopFrameResponse
+from app.schemas.frame_trend_monthly import FrameTrendVenueMonthlyTopFrameResponse
 from app.services import frame_trend_input_service
 
 
@@ -43,6 +44,24 @@ def get_monthly_top_frames(
         end_month=end_month,
     )
 
+@router.get(
+    "/monthly-top-frames-by-venue",
+    response_model=FrameTrendVenueMonthlyTopFrameResponse,
+)
+def get_monthly_top_frames_by_venue(
+    meeting_type: str = Query("central", description="central / local / all"),
+    months: int = Query(6, ge=1, le=24),
+    end_year: Optional[int] = Query(None),
+    end_month: Optional[int] = Query(None, ge=1, le=12),
+    db: Session = Depends(get_db),
+):
+    return frame_trend_input_service.get_monthly_top_frames_by_venue(
+        db,
+        meeting_type=meeting_type,
+        months=months,
+        end_year=end_year,
+        end_month=end_month,
+    )
 
 @router.get("/{item_id}", response_model=FrameTrendSnapshotOut)
 def get_frame_trend_detail(
