@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from datetime import date
 
 from fastapi import HTTPException
@@ -7,15 +8,10 @@ from sqlalchemy.orm import Session
 import app.repositories.frame_trend_input_repository as frame_trend_input_repository
 import app.repositories.frame_trend_snapshot_repository as frame_trend_snapshot_repository
 from app.schemas.frame_trend_input import FrameTrendInputBatchCreate
-from collections import defaultdict
-from datetime import date
-
 from app.schemas.frame_trend_monthly import (
     FrameTrendVenueMonthlyTopFrameItem,
     FrameTrendVenueMonthlyTopFrameResponse,
 )
-import app.repositories.frame_trend_input_repository as frame_trend_input_repository
-
 
 LOCAL_VENUES = {
     "大井",
@@ -59,7 +55,7 @@ def _month_range_from_end(year: int, month: int, months: int):
 
 
 def get_monthly_top_frames_by_venue(
-    db,
+    db: Session,
     *,
     meeting_type: str = "central",
     months: int = 6,
@@ -82,10 +78,12 @@ def get_monthly_top_frames_by_venue(
         end_date=end_date,
     )
 
-    venue_monthly_counts = defaultdict(lambda: {
-        "frame_counts": {i: 0 for i in range(1, 9)},
-        "sample_size": 0,
-    })
+    venue_monthly_counts = defaultdict(
+        lambda: {
+            "frame_counts": {i: 0 for i in range(1, 9)},
+            "sample_size": 0,
+        }
+    )
 
     for row in rows:
         row_meeting_type = _detect_meeting_type_by_venue(row.venue)
@@ -123,6 +121,7 @@ def get_monthly_top_frames_by_venue(
                 month=month,
                 top_frame=top_frame,
                 top_win_count=top_win_count,
+                frame_win_counts={str(k): v for k, v in frame_counts.items()},
                 sample_size=sample_size,
             )
         )
@@ -131,6 +130,7 @@ def get_monthly_top_frames_by_venue(
         meeting_type=meeting_type,
         items=items,
     )
+
 
 def list_frame_trend_inputs(
     db: Session,
@@ -204,10 +204,7 @@ def generate_frame_trend_snapshot(
         top_frames = [frame for frame, cnt in counts.items() if cnt == max_count]
         lucky_frame = min(top_frames)
 
-    trend_summary = None
-    trend_note = None
     recommended_style = "balanced"
-    ai_comment = None
 
     if lucky_frame is not None:
         trend_summary = f"1〜6Rで{lucky_frame}枠が最多{max_count}勝"
