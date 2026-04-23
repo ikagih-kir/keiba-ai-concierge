@@ -27,16 +27,6 @@ def list_frame_trends(
         target_date=target_date,
     )
 
-
-@router.get("/{item_id}", response_model=FrameTrendSnapshotOut)
-def get_frame_trend_detail(
-    item_id: int,
-    db: Session = Depends(get_db),
-):
-    return frame_trend_snapshot_service.get_public_frame_trend_snapshot(db, item_id)
-
-
-
 @router.get("/monthly-top-frames", response_model=FrameTrendMonthlyTopFrameResponse)
 def get_monthly_top_frames(
     meeting_type: Literal["central", "local", "all"] = "central",
@@ -52,3 +42,12 @@ def get_monthly_top_frames(
         end_year=end_year,
         end_month=end_month,
     )
+
+
+@router.get("/{item_id}", response_model=FrameTrendSnapshotOut)
+def get_frame_trend_detail(
+    item_id: int,
+    db: Session = Depends(get_db),
+):
+    return frame_trend_snapshot_service.get_public_frame_trend_snapshot(db, item_id)
+
