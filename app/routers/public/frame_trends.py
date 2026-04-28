@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.frame_trend_snapshot import FrameTrendSnapshotOut
 from app.services import frame_trend_snapshot_service
-from app.schemas.frame_trend_monthly import FrameTrendMonthlyTopFrameResponse
 from app.schemas.frame_trend_monthly import FrameTrendVenueMonthlyTopFrameResponse
 from app.services import frame_trend_input_service
 
@@ -28,7 +27,7 @@ def list_frame_trends(
         target_date=target_date,
     )
 
-@router.get("/monthly-top-frames", response_model=FrameTrendMonthlyTopFrameResponse)
+@router.get("/monthly-top-frames", response_model=FrameTrendVenueMonthlyTopFrameResponse)
 def get_monthly_top_frames(
     meeting_type: Literal["central", "local", "all"] = "central",
     months: int = Query(6, ge=1, le=24),
