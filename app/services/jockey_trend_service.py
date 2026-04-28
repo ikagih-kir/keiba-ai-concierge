@@ -1,0 +1,133 @@
+from collections import Counter
+from datetime import date
+from typing import Optional
+
+from sqlalchemy.orm import Session
+
+from app.models.jockey_trend import JockeyTrend
+from app.schemas.jockey_trend import (
+    JockeyTrendCreate,
+    JockeyTrendPublicItem,
+    JockeyTrendPublicResponse,
+    JockeyTrendRankingItem,
+    JockeyTrendTopJockey,
+    JockeyTrendUpdate,
+)
+
+
+def create_jockey_trend(db: Session, data: JockeyTrendCreate) -> JockeyTrend:
+    item = JockeyTrend(**data.model_dump())
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+def list_admin_jockey_trends(
+    db: Session,
+    race_date: Optional[date] = None,
+    meeting_type: Optional[str] = None,
+    venue: Optional[str] = None,
+) -> list[JockeyTrend]:
+    q = db.query(JockeyTrend)
+
+    if race_date is not None:
+        q = q.filter(JockeyTrend.race_date == race_date)
+
+    if meeting_type:
+        q = q.filter(JockeyTrend.meeting_type == meeting_type)
+
+    if venue:
+        q = q.filter(JockeyTrend.venue == venue)
+
+    return q.order_by(
+        JockeyTrend.race_date.desc(),
+        JockeyTrend.meeting_type.asc(),
+        JockeyTrend.venue.asc(),
+        JockeyTrend.race_no.asc(),
+    ).all()
+
+
+def get_jockey_trend(db: Session, item_id: int) -> JockeyTrend | None:
+    return db.query(JockeyTrend).filter(JockeyTrend.id == item_id).first()
+
+
+def update_jockey_trend(
+    db: Session,
+    item: JockeyTrend,
+    data: JockeyTrendUpdate,
+) -> JockeyTrend:
+    update_data = data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(item, key, value)
+
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+def delete_jockey_trend(db: Session, item: JockeyTrend) -> None:
+    db.delete(item)
+    db.commit()
+
+
+def build_public_jockey_trend_response(
+    db: Session,
+    race_date: date,
+    meeting_type: str = "central",
+    venue: Optional[str] = None,
+) -> JockeyTrendPublicResponse:
+    q = db.query(JockeyTrend).filter(
+        JockeyTrend.race_date == race_date,
+        JockeyTrend.meeting_type == meeting_type,
+        JockeyTrend.is_published.is_(True),
+    )
+
+    if venue:
+        q = q.filter(JockeyTrend.venue == venue)
+
+    items = q.order_by(JockeyTrend.race_no.asc()).all()
+
+    counter = Counter()
+    for item in items:
+        name = (item.jockey_name or "").strip()
+        if name:
+            counter[name] += 1
+
+    ranking = []
+    for index, entry in enumerate(counter.most_common(), start=1):
+        jockey_name, win_count = entry
+        ranking.append(
+            JockeyTrendRankingItem(
+                rank=index,
+                jockey_name=jockey_name,
+                win_count=win_count,
+            )
+        )
+
+    top_jockey = None
+    if ranking:
+        top_jockey = JockeyTrendTopJockey(
+            jockey_name=ranking[0].jockey_name,
+            win_count=ranking[0].win_count,
+        )
+
+    return JockeyTrendPublicResponse(
+        race_date=race_date,
+        meeting_type=meeting_type,
+        venue=venue,
+        items=[
+            JockeyTrendPublicItem(
+                id=item.id,
+                race_no=item.race_no,
+                race_name=item.race_name,
+                jockey_name=item.jockey_name,
+                horse_name=item.horse_name,
+                venue=item.venue,
+            )
+            for item in items
+        ],
+        ranking=ranking,
+        top_jockey=top_jockey,
+    )

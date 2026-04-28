@@ -35,6 +35,8 @@ from app.routers.public.assistant_chat import router as assistant_chat_router
 from app.routers.admin.chat_faqs import router as admin_chat_faqs_router
 from app.routers.admin.chat_question_logs import router as admin_chat_question_logs_router
 
+from app.routers.admin import jockey_trends as admin_jockey_trends
+from app.routers.public import jockey_trends as public_jockey_trends
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -72,6 +74,8 @@ app.include_router(admin_frame_trends_router, prefix="/admin")
 app.include_router(admin_condition_changes.router, prefix="/admin")
 app.include_router(admin_chat_faqs_router, prefix="/admin")
 app.include_router(admin_chat_question_logs_router, prefix="/admin")
+app.include_router(admin_jockey_trends.router)
+
 
 # ----------------------------
 # Public
@@ -89,3 +93,4 @@ app.include_router(public_condition_changes.router)
 app.include_router(public_memorial.router)
 app.include_router(rankings_router)
 app.include_router(assistant_chat_router)
+app.include_router(public_jockey_trends.router)
