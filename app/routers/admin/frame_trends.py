@@ -7,12 +7,16 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.frame_trend_snapshot import FrameTrendSnapshotOut
 from app.schemas.frame_trend_monthly import FrameTrendVenueMonthlyTopFrameResponse
+from app.schemas.frame_trend_input import (
+    FrameTrendInputBatchCreate,
+    FrameTrendInputOut,
+)
 from app.services import frame_trend_snapshot_service
 from app.services import frame_trend_input_service
 
 router = APIRouter(
     prefix="/frame-trends",
-    tags=["Public Frame Trends"],
+    tags=["Admin Frame Trends"],
 )
 
 
@@ -24,6 +28,30 @@ def list_frame_trends(
     return frame_trend_snapshot_service.list_public_frame_trend_snapshots(
         db,
         target_date=target_date,
+    )
+
+
+@router.get("/inputs/list", response_model=List[FrameTrendInputOut])
+def list_frame_trend_inputs(
+    target_date: Optional[date] = Query(None),
+    venue: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    return frame_trend_input_service.list_frame_trend_inputs(
+        db,
+        target_date=target_date,
+        venue=venue,
+    )
+
+
+@router.post("/inputs/batch", response_model=List[FrameTrendInputOut])
+def create_frame_trend_inputs_batch(
+    data: FrameTrendInputBatchCreate,
+    db: Session = Depends(get_db),
+):
+    return frame_trend_input_service.create_or_update_frame_trend_inputs_batch(
+        db,
+        data,
     )
 
 
