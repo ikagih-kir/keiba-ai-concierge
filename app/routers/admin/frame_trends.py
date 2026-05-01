@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.schemas.frame_trend_snapshot import FrameTrendSnapshotOut
+from app.schemas.frame_trend_snapshot import FrameTrendSnapshotUpdate
 from app.schemas.frame_trend_monthly import FrameTrendVenueMonthlyTopFrameResponse
 from app.schemas.frame_trend_input import (
     FrameTrendInputBatchCreate,
@@ -13,6 +14,8 @@ from app.schemas.frame_trend_input import (
 )
 from app.services import frame_trend_snapshot_service
 from app.services import frame_trend_input_service
+from fastapi import HTTPException
+
 
 router = APIRouter(
     prefix="/frame-trends",
@@ -84,3 +87,38 @@ def get_frame_trend_detail(
         db,
         item_id,
     )
+
+
+@router.delete("/{item_id}")
+def delete_frame_trend(
+    item_id: int,
+    db: Session = Depends(get_db),
+):
+    deleted = frame_trend_snapshot_service.delete_frame_trend_snapshot(
+        db,
+        item_id=item_id,
+    )
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    db.commit()
+    return {"message": "deleted"}
+
+@router.put("/{item_id}", response_model=FrameTrendSnapshotOut)
+def update_frame_trend(
+    item_id: int,
+    data: FrameTrendSnapshotUpdate,
+    db: Session = Depends(get_db),
+):
+    updated = frame_trend_snapshot_service.update_frame_trend_snapshot(
+        db,
+        item_id=item_id,
+        data=data,
+    )
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    db.commit()
+    return updated
