@@ -1,11 +1,12 @@
 from datetime import date
-from typing import Optional
+from typing import Optional, Literal
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.schemas.jockey_trend import JockeyTrendPublicResponse
+from app.schemas.jockey_trend import JockeyYearlyMonthlyChampionsResponse
 from app.services.jockey_trend_service import build_public_jockey_trend_response
 from app.services import jockey_trend_service
 
@@ -54,4 +55,19 @@ def get_today_jockey_trends(
         race_date=today,
         meeting_type=meeting_type,
         venue=venue,
+    )
+
+@router.get(
+    "/yearly-monthly-champions",
+    response_model=JockeyYearlyMonthlyChampionsResponse,
+)
+def get_yearly_monthly_champions(
+    meeting_type: Literal["central", "local", "all"] = Query("central"),
+    year: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
+    return jockey_trend_service.get_yearly_monthly_champions(
+        db,
+        year=year,
+        meeting_type=meeting_type,
     )

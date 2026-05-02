@@ -3,7 +3,7 @@ from datetime import date
 from typing import Optional
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import extract, func
 from datetime import date, timedelta
 
 from app.models.jockey_trend import JockeyTrend
@@ -170,4 +170,58 @@ def get_monthly_ranking(db, meeting_type: str, venue: str | None, months: int):
         "venue": venue,
         "months": months,
         "items": items,
+    }
+
+def get_yearly_monthly_champions(
+    db: Session,
+    *,
+    year: int | None = None,
+    meeting_type: str = "central",
+):
+    today = date.today()
+    target_year = year or today.year
+
+    query = db.query(
+        extract("month", JockeyTrend.race_date).label("month"),
+        JockeyTrend.jockey_name.label("jockey_name"),
+        func.count(JockeyTrend.id).label("win_count"),
+    ).filter(
+        extract("year", JockeyTrend.race_date) == target_year,
+        JockeyTrend.is_published == True,
+    )
+
+    if meeting_type != "all":
+        query = query.filter(JockeyTrend.meeting_type == meeting_type)
+
+    rows = (
+        query
+        .group_by(
+            extract("month", JockeyTrend.race_date),
+            JockeyTrend.jockey_name,
+        )
+        .order_by(
+            extract("month", JockeyTrend.race_date).asc(),
+            func.count(JockeyTrend.id).desc(),
+            JockeyTrend.jockey_name.asc(),
+        )
+        .all()
+    )
+
+    champions_by_month = {}
+
+    for row in rows:
+        month = int(row.month)
+
+        # その月の1位だけ採用
+        if month not in champions_by_month:
+            champions_by_month[month] = {
+                "month": month,
+                "jockey_name": row.jockey_name,
+                "win_count": int(row.win_count),
+            }
+
+    return {
+        "year": target_year,
+        "meeting_type": meeting_type,
+        "items": list(champions_by_month.values()),
     }

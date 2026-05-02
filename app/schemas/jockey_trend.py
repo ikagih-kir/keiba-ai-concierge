@@ -91,3 +91,14 @@ class JockeyTrendPublicResponse(BaseModel):
     items: List[JockeyTrendPublicItem]
     ranking: List[JockeyTrendRankingItem]
     top_jockey: Optional[JockeyTrendTopJockey] = None
+
+class JockeyMonthlyChampionItem(BaseModel):
+    month: int
+    jockey_name: str
+    win_count: int
+
+
+class JockeyYearlyMonthlyChampionsResponse(BaseModel):
+    year: int
+    meeting_type: Literal["central", "local", "all"]
+    items: List[JockeyMonthlyChampionItem]    
