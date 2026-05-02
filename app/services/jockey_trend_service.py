@@ -3,6 +3,8 @@ from datetime import date
 from typing import Optional
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from datetime import date, timedelta
 
 from app.models.jockey_trend import JockeyTrend
 from app.schemas.jockey_trend import (
@@ -131,3 +133,41 @@ def build_public_jockey_trend_response(
         ranking=ranking,
         top_jockey=top_jockey,
     )
+
+def get_monthly_ranking(db, meeting_type: str, venue: str | None, months: int):
+    # 期間計算（ざっくり1ヶ月 = 30日）
+    from_date = date.today() - timedelta(days=30 * months)
+
+    query = db.query(
+        JockeyTrend.jockey_name,
+        func.count().label("win_count")
+    ).filter(
+        JockeyTrend.race_date >= from_date,
+        JockeyTrend.meeting_type == meeting_type,
+        JockeyTrend.is_published == True
+    )
+
+    if venue:
+        query = query.filter(JockeyTrend.venue == venue)
+
+    results = query.group_by(
+        JockeyTrend.jockey_name
+    ).order_by(
+        func.count().desc()
+    ).all()
+
+    items = [
+        {
+            "rank": i + 1,
+            "jockey_name": r.jockey_name,
+            "win_count": r.win_count,
+        }
+        for i, r in enumerate(results)
+    ]
+
+    return {
+        "meeting_type": meeting_type,
+        "venue": venue,
+        "months": months,
+        "items": items,
+    }
