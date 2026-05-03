@@ -20,7 +20,7 @@ class ReviewBase(BaseModel):
 
 
 class ReviewCreate(ReviewBase):
-    pass
+    created_at: Optional[datetime] = None
 
 
 class ReviewUpdate(BaseModel):
@@ -34,6 +34,7 @@ class ReviewUpdate(BaseModel):
     admin_reply: Optional[str] = None
     replied_at: Optional[datetime] = None
     helpful_count: Optional[int] = Field(None, ge=0)
+    created_at: Optional[datetime] = None
 
 
 class ReviewReply(BaseModel):

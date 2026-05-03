@@ -19,6 +19,7 @@ def create_review(db: Session, data: ReviewCreate):
         image_url=data.image_url,
         is_public=data.is_public,
         helpful_count=data.helpful_count,
+        created_at=data.created_at or datetime.utcnow(),
     )
 
     db.add(review)
