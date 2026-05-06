@@ -24,3 +24,4 @@ from app.models.admin import Admin      # noqa
 from app.models.site import Site
 from app.models.article import Article
 from app.models.home_dialog import HomeDialog  # noqa
+from app.models.push_token import PushToken  # noqa

@@ -16,3 +16,4 @@ from app.models.chat_message import ChatMessage
 from app.models.chat_question_log import ChatQuestionLog
 from app.models.chat_faq import ChatFaq
 from app.models.home_dialog import HomeDialog
+from app.models.push_token import PushToken

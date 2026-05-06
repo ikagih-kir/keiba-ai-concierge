@@ -41,6 +41,8 @@ from app.routers.public import jockey_trends as public_jockey_trends
 from app.routers.admin import home_dialogs as admin_home_dialogs
 from app.routers.public import home_dialogs as public_home_dialogs
 
+from app.routers.public import push_tokens as public_push_tokens
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -99,3 +101,4 @@ app.include_router(rankings_router)
 app.include_router(assistant_chat_router)
 app.include_router(public_jockey_trends.router)
 app.include_router(public_home_dialogs.router)
+app.include_router(public_push_tokens.router)
