@@ -44,7 +44,7 @@ from app.routers.public import home_dialogs as public_home_dialogs
 from app.routers.public import push_tokens as public_push_tokens
 
 from app.routers.admin import push_notifications as admin_push_notifications
-
+from app.routers.internal import push_notifications as internal_push_notifications
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -86,6 +86,7 @@ app.include_router(admin_jockey_trends.router)
 app.include_router(admin_home_dialogs.router, prefix="/admin")
 app.include_router(admin_push_notifications.router, prefix="/admin")
 
+
 # ----------------------------
 # Public
 # ----------------------------
@@ -105,3 +106,9 @@ app.include_router(assistant_chat_router)
 app.include_router(public_jockey_trends.router)
 app.include_router(public_home_dialogs.router)
 app.include_router(public_push_tokens.router)
+
+
+# ----------------------------
+# Internal
+# ----------------------------
+app.include_router(internal_push_notifications.router)
