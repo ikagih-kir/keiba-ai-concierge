@@ -135,32 +135,63 @@ def build_public_jockey_trend_response(
     )
 
 def get_monthly_ranking(db, meeting_type: str, venue: str | None, months: int):
-    # 期間計算（ざっくり1ヶ月 = 30日）
-    from_date = date.today() - timedelta(days=30 * months)
+    """
+    月間勝利数ランキング
+
+    months=1 の場合:
+        今月1日〜翌月1日未満
+
+    months=2 の場合:
+        先月1日〜翌月1日未満
+
+    ※ 直近30日ではなく、カレンダー月単位で集計する
+    """
+    today = date.today()
+
+    # 今月の1日
+    current_month_start = date(today.year, today.month, 1)
+
+    # months分さかのぼった開始月
+    start_month_index = today.month - months + 1
+    start_year = today.year
+
+    while start_month_index <= 0:
+        start_month_index += 12
+        start_year -= 1
+
+    from_date = date(start_year, start_month_index, 1)
+
+    # 翌月1日
+    if today.month == 12:
+        to_date = date(today.year + 1, 1, 1)
+    else:
+        to_date = date(today.year, today.month + 1, 1)
 
     query = db.query(
         JockeyTrend.jockey_name,
-        func.count().label("win_count")
+        func.count(JockeyTrend.id).label("win_count"),
     ).filter(
         JockeyTrend.race_date >= from_date,
+        JockeyTrend.race_date < to_date,
         JockeyTrend.meeting_type == meeting_type,
-        JockeyTrend.is_published == True
+        JockeyTrend.is_published.is_(True),
     )
 
     if venue:
         query = query.filter(JockeyTrend.venue == venue)
 
     results = query.group_by(
-        JockeyTrend.jockey_name
+        JockeyTrend.jockey_name,
     ).order_by(
-        func.count().desc()
+        func.count(JockeyTrend.id).desc(),
+        JockeyTrend.jockey_name.asc(),
     ).all()
 
     items = [
         {
             "rank": i + 1,
             "jockey_name": r.jockey_name,
-            "win_count": r.win_count,
+            "win_count": int(r.win_count),
         }
         for i, r in enumerate(results)
     ]
@@ -169,6 +200,8 @@ def get_monthly_ranking(db, meeting_type: str, venue: str | None, months: int):
         "meeting_type": meeting_type,
         "venue": venue,
         "months": months,
+        "from_date": from_date.isoformat(),
+        "to_date": to_date.isoformat(),
         "items": items,
     }
 
