@@ -1,6 +1,9 @@
 import json
 import re
 from sqlalchemy.orm import Session
+from datetime import datetime
+
+from app.models.chat_faq import ChatFaq
 
 from app.repositories import (
     chat_thread_repository,
@@ -8,6 +11,8 @@ from app.repositories import (
     chat_question_log_repository,
     chat_faq_repository,
 )
+
+
 
 
 def normalize_question(text: str) -> str:
@@ -44,6 +49,95 @@ def normalize_question(text: str) -> str:
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
+def _safe_json_loads(value):
+    if not value:
+        return []
+
+    try:
+        parsed = json.loads(value)
+        if isinstance(parsed, list):
+            return parsed
+        return []
+    except Exception:
+        return []
+
+
+def _score_faq_match(message: str, normalized: str, faq: ChatFaq) -> int:
+    score = 0
+
+    raw_text = (message or "").strip().lower()
+    normalized_text = (normalized or "").strip().lower()
+
+    faq_normalized = (faq.normalized_question or "").strip().lower()
+    question_pattern = (faq.question_pattern or "").strip().lower()
+
+    # 1. 正規化質問の完全一致
+    if faq_normalized and normalized_text == faq_normalized:
+        score += 100
+
+    # 2. 正規化質問の部分一致
+    if faq_normalized and (
+        faq_normalized in normalized_text or normalized_text in faq_normalized
+    ):
+        score += 70
+
+    # 3. 質問パターンの部分一致
+    if question_pattern and (
+        question_pattern in raw_text or raw_text in question_pattern
+    ):
+        score += 50
+
+    # 4. keywords_json の一致
+    keywords = _safe_json_loads(faq.keywords_json)
+    for keyword in keywords:
+        kw = str(keyword).strip().lower()
+        if not kw:
+            continue
+
+        normalized_kw = normalize_question(kw)
+
+        if kw in raw_text:
+            score += 25
+
+        if normalized_kw and normalized_kw in normalized_text:
+            score += 25
+
+    # 5. 何かしら一致したFAQだけ、優先度を少し加点
+    if score > 0:
+        score += min(int(faq.priority or 0), 30)
+
+    return score
+
+
+def find_best_faq(db: Session, message: str, normalized: str, intent: str):
+    faqs = (
+        db.query(ChatFaq)
+        .filter(ChatFaq.is_active.is_(True))
+        .order_by(ChatFaq.priority.desc(), ChatFaq.id.desc())
+        .all()
+    )
+
+    best_faq = None
+    best_score = 0
+
+    for faq in faqs:
+        score = _score_faq_match(message, normalized, faq)
+
+        # intent が一致していたら加点
+        if faq.intent and faq.intent == intent:
+            score += 30
+
+        if score > best_score:
+            best_score = score
+            best_faq = faq
+
+    # 低すぎるスコアは誤爆防止で不採用
+    if best_score < 40:
+        return None
+
+    return best_faq
+
+
 
 def detect_intent(message: str) -> str:
     text = message.lower()
@@ -56,8 +150,18 @@ def detect_intent(message: str) -> str:
         return "free_prediction_question"
     if "枠順" in text or "ラッキー枠" in text:
         return "frame_trend_question"
+    if (
+        "騎手" in text
+        or "ジョッキー" in text
+        or "勝利騎手" in text
+        or "好調な騎手" in text
+        or "注目騎手" in text
+    ):
+        return "jockey_trend_question"
+    
     if "記事" in text:
-        return "article_question"
+        return "article_question"    
+
     if "クチコミ" in text or "口コミ" in text:
         return "review_question"
     if "ipat" in text:
@@ -97,6 +201,17 @@ def build_fallback_response(intent: str):
                 {"type": "open_page", "label": "枠順トレンドを見る", "path": "/frame-trends"},
             ],
         }
+    
+    if intent == "jockey_trend_question":
+        return {
+            "assistant_message": "騎手トレンドページで、本日の1〜6Rの勝利騎手や好調な騎手を確認できます。競馬場ごとの序盤レース結果から、注目騎手をチェックできます。",
+            "answered_by": "fallback",
+            "source_summary": "assistant fallback",
+            "suggested_actions": [
+                {"type": "open_page", "label": "騎手トレンドを見る", "path": "/jockey-trends"},
+            ],
+        }
+
     if intent == "article_question":
         return {
             "assistant_message": "検証結果や比較記事は記事一覧から確認できます。気になるテーマがあれば記事から見るのがおすすめです。",
@@ -128,7 +243,7 @@ def build_fallback_response(intent: str):
                     "path": "/external-links",
                 },
             ],
-        },
+        }
 
     if intent == "ipat_request":
         return {
@@ -237,7 +352,12 @@ def send_chat_message(db: Session, thread_id: int | None, message: str, user_id:
         last_user_message=message,
     )
 
-    faq = chat_faq_repository.find_active_faq_by_normalized_question(db, normalized)
+    faq = find_best_faq(
+        db=db,
+        message=message,
+        normalized=normalized,
+        intent=intent,
+    )
 
     if faq:
         suggested_actions = []
@@ -247,10 +367,16 @@ def send_chat_message(db: Session, thread_id: int | None, message: str, user_id:
             except Exception:
                 suggested_actions = []
 
+        faq.usage_count = (faq.usage_count or 0) + 1
+        faq.last_used_at = datetime.now()
+        db.add(faq)
+
         assistant_message_text = faq.answer_text
         answered_by = "faq"
         source_summary = f"faq #{faq.id}"
         faq_id = faq.id
+        
+
     else:
         fallback = build_fallback_response(intent)
         assistant_message_text = fallback["assistant_message"]

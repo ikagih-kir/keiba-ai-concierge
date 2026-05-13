@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Any
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -44,7 +44,7 @@ class ChatSendResponse(BaseModel):
     assistant_message: str
     intent: Optional[str] = None
     answered_by: Optional[str] = None
-    suggested_actions: List[SuggestedAction] = []
+    suggested_actions: List[SuggestedAction] = Field(default_factory=list)
     source_summary: Optional[str] = None
 
 
