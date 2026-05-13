@@ -13,6 +13,7 @@ from app.schemas.jockey_trend import (
 from app.services.jockey_trend_service import (
     create_jockey_trend,
     delete_jockey_trend,
+    delete_jockey_trends_by_date_venue,
     get_jockey_trend,
     list_admin_jockey_trends,
     update_jockey_trend,
@@ -42,6 +43,20 @@ def create_item(
     db: Session = Depends(get_db),
 ):
     return create_jockey_trend(db=db, data=data)
+
+@router.delete("/by-date-venue")
+def delete_items_by_date_venue(
+    race_date: date = Query(...),
+    meeting_type: str = Query(...),
+    venue: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    return delete_jockey_trends_by_date_venue(
+        db=db,
+        race_date=race_date,
+        meeting_type=meeting_type,
+        venue=venue,
+    )
 
 
 @router.put("/{item_id}", response_model=JockeyTrendItem)

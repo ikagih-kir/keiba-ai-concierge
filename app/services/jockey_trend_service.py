@@ -258,3 +258,30 @@ def get_yearly_monthly_champions(
         "meeting_type": meeting_type,
         "items": list(champions_by_month.values()),
     }
+
+def delete_jockey_trends_by_date_venue(
+    db: Session,
+    *,
+    race_date: date,
+    meeting_type: str,
+    venue: str,
+) -> dict:
+    deleted_count = (
+        db.query(JockeyTrend)
+        .filter(
+            JockeyTrend.race_date == race_date,
+            JockeyTrend.meeting_type == meeting_type,
+            JockeyTrend.venue == venue,
+        )
+        .delete(synchronize_session=False)
+    )
+
+    db.commit()
+
+    return {
+        "message": "騎手トレンドデータを削除しました",
+        "race_date": str(race_date),
+        "meeting_type": meeting_type,
+        "venue": venue,
+        "deleted_count": deleted_count,
+    }
