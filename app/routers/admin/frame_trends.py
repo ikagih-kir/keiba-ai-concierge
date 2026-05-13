@@ -46,6 +46,18 @@ def list_frame_trend_inputs(
         venue=venue,
     )
 
+@router.delete("/inputs")
+def delete_frame_trend_inputs(
+    target_date: date = Query(..., description="対象日"),
+    venue: str = Query(..., description="競馬場"),
+    db: Session = Depends(get_db),
+):
+    return frame_trend_input_service.delete_frame_trend_inputs_for_venue_day(
+        db,
+        target_date=target_date,
+        venue=venue,
+    )
+
 
 @router.post("/inputs/batch", response_model=List[FrameTrendInputOut])
 def create_frame_trend_inputs_batch(

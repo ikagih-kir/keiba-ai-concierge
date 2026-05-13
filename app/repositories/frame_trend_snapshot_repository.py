@@ -183,3 +183,21 @@ def upsert_frame_trend_snapshot_by_date_and_scope(
 
     db.flush()
     return item
+
+
+def delete_frame_trend_snapshot_by_date_and_scope(
+    db: Session,
+    *,
+    target_date: date,
+    race_scope: str,
+) -> int:
+    deleted_count = (
+        db.query(FrameTrendSnapshot)
+        .filter(
+            FrameTrendSnapshot.target_date == target_date,
+            FrameTrendSnapshot.race_scope == race_scope,
+        )
+        .delete(synchronize_session=False)
+    )
+
+    return deleted_count

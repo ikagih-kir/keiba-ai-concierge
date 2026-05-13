@@ -238,3 +238,38 @@ def generate_frame_trend_snapshot(
         sort_order=0,
         is_public=True,
     )
+
+
+def delete_frame_trend_inputs_for_venue_day(
+    db: Session,
+    *,
+    target_date: date,
+    venue: str,
+):
+    race_scope = f"{venue}_1to6"
+
+    deleted_inputs_count = (
+        frame_trend_input_repository.delete_frame_trend_inputs_by_date_and_venue(
+            db,
+            target_date=target_date,
+            venue=venue,
+        )
+    )
+
+    deleted_snapshots_count = (
+        frame_trend_snapshot_repository.delete_frame_trend_snapshot_by_date_and_scope(
+            db,
+            target_date=target_date,
+            race_scope=race_scope,
+        )
+    )
+
+    db.commit()
+
+    return {
+        "message": "枠順トレンド入力データを削除しました",
+        "target_date": str(target_date),
+        "venue": venue,
+        "deleted_inputs_count": deleted_inputs_count,
+        "deleted_snapshots_count": deleted_snapshots_count,
+    }

@@ -111,3 +111,20 @@ def delete_inputs_by_date_and_venue(
         .delete(synchronize_session=False)
     )
     db.flush()
+
+def delete_frame_trend_inputs_by_date_and_venue(
+    db: Session,
+    *,
+    target_date: date,
+    venue: str,
+) -> int:
+    deleted_count = (
+        db.query(FrameTrendInput)
+        .filter(
+            FrameTrendInput.target_date == target_date,
+            FrameTrendInput.venue == venue,
+        )
+        .delete(synchronize_session=False)
+    )
+
+    return deleted_count    
