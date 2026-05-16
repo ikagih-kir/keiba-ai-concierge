@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field, ConfigDict
 
 
 class ArticleBase(BaseModel):
+    site_id: Optional[int] = Field(None, description="対象サイトID")
+
     title: str = Field(..., max_length=255, description="記事タイトル")
     slug: str = Field(..., max_length=255, description="URL識別子")
     category: Optional[str] = Field(None, max_length=100, description="記事カテゴリ")
@@ -27,6 +29,8 @@ class ArticleCreate(ArticleBase):
 
 
 class ArticleUpdate(BaseModel):
+    site_id: Optional[int] = None
+
     title: Optional[str] = Field(None, max_length=255)
     slug: Optional[str] = Field(None, max_length=255)
     category: Optional[str] = Field(None, max_length=100)
@@ -46,16 +50,26 @@ class ArticleUpdate(BaseModel):
 
 class ArticleOut(BaseModel):
     id: int
+    site_id: Optional[int] = None
+    site_name: Optional[str] = None
+    site_external_url: Optional[str] = None
+    site_affiliate_url: Optional[str] = None
+
     title: str
+    slug: Optional[str] = None
     category: Optional[str] = None
     excerpt: Optional[str] = None
     body: Optional[str] = None
     thumbnail_url: Optional[str] = None
     banner_url: Optional[str] = None
     published_at: Optional[datetime] = None
+
+    is_featured: Optional[bool] = None
     is_public: bool
+    sort_order: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
+    
 
 class ArticlePublicToggle(BaseModel):
     is_public: bool

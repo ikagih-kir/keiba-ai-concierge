@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
+from sqlalchemy.dialects.mysql import BIGINT
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
 
@@ -7,6 +9,15 @@ class Article(Base):
     __tablename__ = "articles"
 
     id = Column(Integer, primary_key=True, index=True)
+
+    # 対象サイト
+    site_id = Column(
+    BIGINT(unsigned=True),
+    ForeignKey("sites.id", ondelete="SET NULL"),
+    nullable=True,
+    index=True,
+)
+    site = relationship("Site", lazy="joined")
 
     # 基本情報
     title = Column(String(255), nullable=False)
@@ -32,3 +43,15 @@ class Article(Base):
     # 作成更新日時
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    @property
+    def site_name(self):
+        return self.site.name if self.site else None
+
+    @property
+    def site_external_url(self):
+        return self.site.external_url if self.site else None
+
+    @property
+    def site_affiliate_url(self):
+        return self.site.affiliate_url if self.site else None
