@@ -27,6 +27,18 @@ def list_home_banners(
     return home_banner_service.list_home_banners(db)
 
 
+@router.get("/{banner_id}", response_model=HomeBannerOut)
+def get_home_banner(
+    banner_id: int,
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    banner = home_banner_service.get_home_banner(db, banner_id)
+    if not banner:
+        raise HTTPException(status_code=404, detail="Home banner not found")
+    return banner
+
+
 @router.post("", response_model=HomeBannerOut)
 def create_home_banner(
     data: HomeBannerCreate,

@@ -13,6 +13,9 @@ def list_home_banners(db: Session):
         .all()
     )
 
+def get_home_banner(db: Session, banner_id: int):
+    return db.query(HomeBanner).filter(HomeBanner.id == banner_id).first()
+
 
 def get_active_home_banners(db: Session):
     now = datetime.now()

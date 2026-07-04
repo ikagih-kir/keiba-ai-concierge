@@ -7,6 +7,9 @@ from app.schemas.home_banner import HomeBannerCreate, HomeBannerUpdate
 def list_home_banners(db: Session):
     return home_banner_repository.list_home_banners(db)
 
+def get_home_banner(db: Session, banner_id: int):
+    return home_banner_repository.get_home_banner(db, banner_id)
+
 
 def get_active_home_banners(db: Session):
     return home_banner_repository.get_active_home_banners(db)
