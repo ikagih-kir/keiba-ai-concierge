@@ -18,3 +18,4 @@ from app.models.chat_faq import ChatFaq
 from app.models.home_dialog import HomeDialog
 from app.models.push_token import PushToken
 from app.models.scheduled_push_notification import ScheduledPushNotification
+from app.models.home_banner import HomeBanner

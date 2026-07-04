@@ -26,3 +26,4 @@ from app.models.article import Article
 from app.models.home_dialog import HomeDialog  # noqa
 from app.models.push_token import PushToken  # noqa
 from app.models.scheduled_push_notification import ScheduledPushNotification  # noqa
+from app.models.home_banner import HomeBanner  # noqa
