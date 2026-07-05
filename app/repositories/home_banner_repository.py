@@ -17,12 +17,13 @@ def get_home_banner(db: Session, banner_id: int):
     return db.query(HomeBanner).filter(HomeBanner.id == banner_id).first()
 
 
-def get_active_home_banners(db: Session):
+def get_active_home_banners(db: Session, placement: str = "home_middle"):
     now = datetime.now()
 
     return (
         db.query(HomeBanner)
         .filter(HomeBanner.is_active.is_(True))
+        .filter(HomeBanner.placement == placement)
         .filter((HomeBanner.start_at.is_(None)) | (HomeBanner.start_at <= now))
         .filter((HomeBanner.end_at.is_(None)) | (HomeBanner.end_at >= now))
         .order_by(HomeBanner.sort_order.asc(), HomeBanner.id.desc())
